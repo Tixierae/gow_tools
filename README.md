@@ -4,7 +4,7 @@ This repo provides functions for creating and analyzing word co-occurrence netwo
 # What are word co-occurrence networks?
 To get a feel for what word co-occurrence networks are, what they can be used for, and the impact of the different parameters, have a look at this [interactive web app](https://safetyapp.shinyapps.io/GoWvis/) (GoWvis). You can paste your own text and download the graph edgelist.
 
-In this repository, word co-occurrence networks are defined in the manner of [Mihalcea and Tarau (2004)](http://www.aclweb.org/anthology/W04-3252). Some more recent papers using word co-occurrence networks are:
+In this repository, word co-occurrence networks are defined in the manner of [Mihalcea and Tarau (2004)](http://www.aclweb.org/anthology/W04-3252). Some more recent papers using word co-occurrence networks can be found below.
 
 # Relevant literature:
 ACL 2018:
