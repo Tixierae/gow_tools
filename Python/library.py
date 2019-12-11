@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 # requires nltk 3.2.1
 from nltk import pos_tag
 
+
 def clean_text_simple(text, my_stopwords, punct, remove_stopwords=True, pos_filtering=True, stemming=True):
     text = text.lower()
     text = ''.join(l for l in text if l not in punct) # remove punctuation (preserving intra-word dashes)
@@ -107,75 +108,41 @@ def terms_to_graph(terms, w):
     return(g)
 
 
-def unweighted_k_core(g):
+def core_dec(g,weighted):
+    '''(un)weighted k-core decomposition'''
     # work on clone of g to preserve g 
-    gg = copy.deepcopy(g)    
-    
+    gg = copy.deepcopy(g)
+    if not weighted:
+        gg.vs['weight'] = gg.strength() # overwrite the 'weight' vertex attribute with the unweighted degrees
     # initialize dictionary that will contain the core numbers
     cores_g = dict(zip(gg.vs['name'],[0]*len(gg.vs)))
     
-    i = 0
-    
-    # while there are vertices remaining in the graph
-    while len(gg.vs)>0:
-        # while there is a vertex with degree less than i
-        while [deg for deg in gg.strength() if deg<= i]:
-            index = [ind for ind, deg in enumerate(gg.strength()) if deg<= i][0]
-            # assign i to the vertices core numbers            
-            cores_g[gg.vs[index]['name']] = i
-            gg.delete_vertices(index)
-        
-        i += 1
-    
-    return cores_g
-
-    
-def weighted_core_dec(g):
-    '''
-    k-core decomposition for weighted graphs (generalized k-cores)
-    based on Batagelj and Zaversnik's (2002) algorithm #4
-    '''
-    # work on clone of g to preserve g 
-    gg = copy.deepcopy(g)    
-    # initialize dictionary that will contain the core numbers
-    cores_g = dict(zip(gg.vs["name"],[0]*len(gg.vs["name"])))
-
-    # initialize min heap of degrees
-    heap_g = zip(gg.vs["weight"],gg.vs["name"])
-    heapq.heapify(heap_g)
-
-    while len(heap_g) > 0:
-        
-        top = heap_g[0][1]
-        # find vertex index of heap top element
-        index_top = gg.vs["name"].index(top)
-        # save names of its neighbors
-        neighbors_top = gg.vs[gg.neighbors(top)]["name"]
+    while len(gg.vs) > 0:
+        # find index of lowest degree vertex
+        min_degree = min(gg.vs['weight'])
+        index_top = gg.vs['weight'].index(min_degree)
+        name_top = gg.vs[index_top]['name']
+        # get names of its neighbors
+        neighbors = gg.vs[gg.neighbors(index_top)]['name']
         # exclude self-edges
-        neighbors_top = [elt for elt in neighbors_top if elt!=top]
-        # set core number of heap top element as its weighted degree
-        cores_g[top] = gg.vs["weight"][index_top]
-        # delete top vertex (weighted degrees are automatically updated)
+        neighbors = [elt for elt in neighbors if elt!=name_top]
+        # set core number of lowest degree vertex as its degree
+        cores_g[name_top] = min_degree
+        # delete top vertex and its incident edges
         gg.delete_vertices(index_top)
         
-        if len(neighbors_top)>0:
-        # iterate over neighbors of top element
-            for i, name_n in enumerate(neighbors_top):
-                index_n = gg.vs["name"].index(name_n)
-                max_n = max(cores_g[top],gg.strength(weights=gg.es["weight"])[index_n])
-                gg.vs[index_n]["weight"] = max_n
-                # update heap
-                heap_g = zip(gg.vs["weight"],gg.vs["name"])
-                heapq.heapify(heap_g)
-        else:
-            # update heap
-            heap_g = zip(gg.vs["weight"],gg.vs["name"])
-            heapq.heapify(heap_g)
-            
-    # sort vertices by decreasing core number
-    sorted_cores_g = dict(sorted(cores_g.items(), key=operator.itemgetter(1), reverse=True))
-    
-    return(sorted_cores_g)
+        if neighbors:
+            if weighted: 
+                new_degrees = gg.strength(weights=gg.es['weight'])
+            else:
+                new_degrees = gg.strength()
+            # iterate over neighbors of top element
+            for neigh in neighbors:
+                index_n = gg.vs['name'].index(neigh)
+                gg.vs[index_n]['weight'] = max(min_degree,new_degrees[index_n])  
+        
+    return(cores_g)
+
 
 def accuracy_metrics(candidate, truth):
     
